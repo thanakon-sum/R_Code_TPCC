@@ -1,19 +1,112 @@
+# ============================================================================
+# FEASIBILITY CHALLENGES ASSESSMENT - SENSITIVITY ANALYSIS
+# ============================================================================
+# 
+# DESCRIPTION:
+# This script creates feasibility assessment figures for sensitivity analysis,
+# comparing multiple variants of the TPCC scenario. It evaluates climate 
+# mitigation pathways across geological, economic, technological, and 
+# socio-cultural feasibility dimensions, showing how different technological
+# constraints and assumptions affect feasibility outcomes.
+#
+# SCENARIO VARIANTS ANALYZED:
+# - TPCC: Base temperature peak climate change scenario
+# - TPCC_a: Alternative parameterization
+# - TPCC_DAChigh: High direct air capture deployment
+# - TPCC_hydhigh: High hydrogen deployment
+# - TPCC_noBECCS: No bioenergy with carbon capture and storage
+# - TPCC_noEW: No enhanced weathering
+#
+# FIGURE STRUCTURE:
+# Same 23-panel structure as main feasibility assessment (panels a-w):
+# - Row 1: GEOLOGICAL FEASIBILITY (biomass, wind, solar, CCS potential)
+# - Row 2: ECONOMIC FEASIBILITY (GDP loss, carbon price, energy investments)
+# - Rows 3-4: TECHNOLOGICAL FEASIBILITY (renewable scale-up, carbon management)
+# - Rows 5-6: SOCIO-CULTURAL FEASIBILITY (energy demand, land use changes)
+#
+# REGIONAL ANALYSIS:
+# Generates separate figures for all regions:
+# - World
+# - R5OECD90+EU, R5ASIA, R5LAM, R5MAF, R5REF
+#
+# ============================================================================
+# REQUIRED DATA FILES:
+# ============================================================================
+# 
+# Place the following files in: userdirectory/data/
+#
+# 1. winsolpotential2.gdx
+#    - Wind and solar renewable energy potential data by region
+#
+# 2. biopotential.gdx
+#    - Bioenergy potential data by region
+#
+# 3. gidden_et_al_geologic_carbon_storage_2.csv
+#    - Geological carbon storage potential by country
+#
+# 4. IAMCTemplate_Iteon_global.gdx
+#
+# ============================================================================
+# REQUIRED R PACKAGES:
+# ============================================================================
+# 
+# Install required packages if not already installed:
+# install.packages(c("tidyverse", "gdxrrw", "cowplot", "RColorBrewer"))
+#
+# ============================================================================
+# OUTPUTS:
+# ============================================================================
+#
+# For each region, generates:
+# Each figure shows all 23 feasibility indicators comparing the 6 TPCC variants
+# with threshold bands indicating medium and high feasibility concerns.
+#
+# ============================================================================
+
+# Load required libraries
 library(tidyverse)
 library(gdxrrw)
 library(cowplot)
 library(RColorBrewer)
 
+# --------------------------------
 # Setup GAMS
+# --------------------------------
+# Update this path to match your GAMS installation
 igdx("/Library/Frameworks/GAMS.framework/Versions/44/Resources")
+
+# --------------------------------
+# File paths
+# --------------------------------
+# IMPORTANT: Update 'userdirectory' to your actual directory path
+data_dir <- "/Users/suku/Downloads/R_Code_TPCC-TPCC/data_TPCC/data"
+
+gdx_file_winsol <- file.path(data_dir, "winsolpotential2.gdx")
+gdx_file_bio <- file.path(data_dir, "biopotential.gdx")
+ccs_file <- file.path(data_dir, "gidden_et_al_geologic_carbon_storage_2.csv")
+gdx_file <- file.path(data_dir, "IAMCTemplate_Iteon_global.gdx")
+
+# Verify files exist
+if (!file.exists(gdx_file_winsol)) stop("Wind/solar potential file not found: ", gdx_file_winsol)
+if (!file.exists(gdx_file_bio)) stop("Bio potential file not found: ", gdx_file_bio)
+if (!file.exists(ccs_file)) stop("CCS potential file not found: ", ccs_file)
+if (!file.exists(gdx_file)) stop("Scenario GDX file not found: ", gdx_file)
+
+cat("\n========================================\n")
+cat("FEASIBILITY SENSITIVITY ANALYSIS\n")
+cat("========================================\n")
 
 # ============================================================================
 # PART 1: CALCULATE REGIONAL THRESHOLDS FOR GEOLOGICAL FEASIBILITY
 # ============================================================================
 
+cat("\n[1/6] Calculating regional thresholds...\n")
+
 # ---------------------------------------------------------------------------
 # 1A. WIND AND SOLAR THRESHOLDS
 # ---------------------------------------------------------------------------
-gdx_file_winsol <- "/Users/suku/Downloads/winsolpotential2.gdx"
+
+cat("   - Processing wind and solar potential data...\n")
 
 winsol_cap <- rgdx.param(gdx_file_winsol, "winsol_cap") %>%
   as_tibble() %>%
@@ -28,36 +121,12 @@ winsol_cf <- rgdx.param(gdx_file_winsol, "winsol_cf") %>%
 # Region mapping to AIM17
 region_mapping <- tribble(
   ~Sr33_original, ~Sr33_AIM17,
-  "JPN", "JPN",
-  "CHN", "CHN",
-  "IND", "IND",
-  "IDN", "XSE",
-  "KOR", "XSE",
-  "THA", "XSE",
-  "MYS", "XSE",
-  "VNM", "XSE",
-  "XSE", "XSE",
-  "XSA", "XSA",
-  "XEA", "XSE",    # CORRECTED: was XSA
-  "XCS", "CIS",
-  "XME", "XME",
-  "AUS", "XOC",
-  "XOC", "XOC",
-  "CAN", "CAN",
-  "USA", "USA",
-  "XE15", "XE25",
-  "XE10", "XE25",
-  "XE3", "XER",    # CORRECTED: was XE25
-  "TUR", "TUR",
-  "XEWI", "XER",
-  "XEEI", "CIS",   # CORRECTED: was XER
-  "XENI", "XER",
-  "RUS", "CIS",
-  "MEX", "XLM",
-  "BRA", "BRA",
-  "XLM", "XLM",
-  "ZAF", "XAF",
-  "XAF", "XAF",
+  "JPN", "JPN", "CHN", "CHN", "IND", "IND", "IDN", "XSE", "KOR", "XSE",
+  "THA", "XSE", "MYS", "XSE", "VNM", "XSE", "XSE", "XSE", "XSA", "XSA",
+  "XEA", "XSE", "XCS", "CIS", "XME", "XME", "AUS", "XOC", "XOC", "XOC",
+  "CAN", "CAN", "USA", "USA", "XE15", "XE25", "XE10", "XE25", "XE3", "XER",
+  "TUR", "TUR", "XEWI", "XER", "XEEI", "CIS", "XENI", "XER", "RUS", "CIS",
+  "MEX", "XLM", "BRA", "BRA", "XLM", "XLM", "ZAF", "XAF", "XAF", "XAF",
   "XNF", "XNF"
 )
 
@@ -93,7 +162,8 @@ potential_winsol_aim17 <- potential_winsol_2050 %>%
 # ---------------------------------------------------------------------------
 # 1B. BIOENERGY THRESHOLDS
 # ---------------------------------------------------------------------------
-gdx_file_bio <- "/Users/suku/Downloads/biopotential.gdx"
+
+cat("   - Processing bioenergy potential data...\n")
 
 bio_potential_raw <- rgdx.param(gdx_file_bio, "PBION_out") %>%
   as_tibble() %>%
@@ -110,15 +180,17 @@ potential_bio_aim17 <- bio_potential_raw %>%
 # ---------------------------------------------------------------------------
 # 1C. CCS THRESHOLDS
 # ---------------------------------------------------------------------------
-ccs_file <- "/Users/suku/Downloads/gidden_et_al_geologic_carbon_storage_2.csv"
-ccs_data_raw <- read_csv(ccs_file, skip = 3)
+
+cat("   - Processing CCS geological potential data...\n")
+
+ccs_data_raw <- read_csv(ccs_file, skip = 3, show_col_types = FALSE)
 
 ccs_potential_country <- ccs_data_raw %>%
   select(NODE = 1, potential_Gt = 9) %>%
   mutate(potential_Gt = as.numeric(potential_Gt)) %>%
   filter(!is.na(potential_Gt), !is.na(NODE), NODE != "Total")
 
-# NODE to AIM17 mapping for CCS (extensive mapping)
+# NODE to AIM17 mapping for CCS
 node_mapping_ccs <- tribble(
   ~NODE, ~Sr33_AIM17,
   "JPN", "JPN", "CHN", "CHN", "HKG", "CHN", "MAC", "CHN", "IND", "IND",
@@ -177,7 +249,8 @@ potential_ccs_aim17 <- ccs_potential_country %>%
 # 1D. CREATE R5 AND WORLD AGGREGATIONS
 # ---------------------------------------------------------------------------
 
-# Mapping from AIM17 to R5 regions
+cat("   - Creating regional aggregations...\n")
+
 r5_mapping <- tribble(
   ~Sr33_AIM17, ~Sr33_R5,
   "XE25", "R5OECD90+EU", "XER", "R5OECD90+EU", "TUR", "R5OECD90+EU",
@@ -231,6 +304,8 @@ potential_ccs_all <- bind_rows(potential_ccs_aim17, potential_ccs_r5, potential_
 # 1E. CALCULATE REGIONAL THRESHOLDS
 # ---------------------------------------------------------------------------
 
+cat("   - Calculating region-specific thresholds...\n")
+
 # IPCC global thresholds
 ipcc_thresholds <- tribble(
   ~technology, ~med_global, ~high_global, ~unit,
@@ -250,7 +325,8 @@ thresholds_winsol <- potential_winsol_all %>%
   mutate(
     med_threshold = med_global * potential_EJ / global_potential,
     high_threshold = high_global * potential_EJ / global_potential
-  )
+  ) %>%
+  rename(potential = potential_EJ)
 
 # Calculate thresholds for Bioenergy
 global_bio <- potential_bio_world %>%
@@ -278,24 +354,17 @@ thresholds_ccs <- potential_ccs_all %>%
   ) %>%
   rename(potential = potential_Gt)
 
-# Combine Wind/Solar thresholds and rename
-thresholds_winsol <- thresholds_winsol %>%
-  rename(potential = potential_EJ)
-
 # Combine all thresholds
-all_regional_thresholds <- bind_rows(
-  thresholds_winsol,
-  thresholds_bio,
-  thresholds_ccs
-)
+all_regional_thresholds <- bind_rows(thresholds_winsol, thresholds_bio, thresholds_ccs)
+
+cat("   - Regional thresholds calculated for Wind, Solar, Bioenergy, CCS\n")
 
 # ============================================================================
-# PART 2: LOAD SCENARIO DATA AND CREATE PLOTS
+# PART 2: LOAD SCENARIO DATA
 # ============================================================================
 
-gdx_file <- "/Users/suku/Downloads/IAMCTemplate_Iteon_global (5).gdx"
+cat("[2/6] Loading scenario data...\n")
 
-# Read data
 merged_data <- rgdx(gdx_file, list(name = "mergedIAMC4AIM"))
 df_load_data <- data.frame(merged_data$val)
 
@@ -307,9 +376,83 @@ colnames(df_load_data) <- c("Model", "Scenario", "Region", "variable", "Unit", "
 df_load_data <- df_load_data %>% 
   mutate(Year = as.numeric(Year), value = as.numeric(value))
 
-# Define scenarios
+# Define sensitivity scenarios
 cmain <- c("CurPol", "TPCC", "TPCC_a", "TPCC_DAChigh", "TPCC_hydhigh", "TPCC_noBECCS", "TPCC_noEW")
 cmain_plot <- c("TPCC", "TPCC_a", "TPCC_DAChigh", "TPCC_hydhigh", "TPCC_noBECCS", "TPCC_noEW")
+
+cat("   - Loaded", length(unique(df_load_data$Scenario)), "scenarios\n")
+
+# ============================================================================
+# PART 2A: CALCULATE BECCS AND FOSSIL CCS REGIONAL THRESHOLDS
+# ============================================================================
+
+cat("[3/6] Calculating BECCS and Fossil CCS thresholds...\n")
+
+# Extract 2050 values for BECCS
+potential_beccs_2050 <- df_load_data %>%
+  filter(variable == "Car_Rem_Bio_wit_CCS", Year == 2050) %>%
+  mutate(value_Gt = value / 1000) %>%
+  group_by(Region) %>%
+  summarise(potential_Gt_yr = mean(value_Gt, na.rm = TRUE), .groups = "drop") %>%
+  rename(Sr33 = Region) %>%
+  mutate(technology = "BECCS")
+
+# Extract 2050 values for Fossil CCS
+potential_fossil_ccs_2050 <- df_load_data %>%
+  filter(variable == "Car_Seq_CCS_Fos", Year == 2050) %>%
+  mutate(value_Gt = value / 1000) %>%
+  group_by(Region) %>%
+  summarise(potential_Gt_yr = mean(value_Gt, na.rm = TRUE), .groups = "drop") %>%
+  rename(Sr33 = Region) %>%
+  mutate(technology = "Fossil_CCS")
+
+# Get World totals for scaling
+world_beccs <- potential_beccs_2050 %>%
+  filter(Sr33 == "World") %>%
+  pull(potential_Gt_yr)
+
+world_fossil_ccs <- potential_fossil_ccs_2050 %>%
+  filter(Sr33 == "World") %>%
+  pull(potential_Gt_yr)
+
+# Calculate regional thresholds for BECCS
+thresholds_beccs <- potential_beccs_2050 %>%
+  mutate(
+    potential = potential_Gt_yr,
+    med_threshold = 3 * potential_Gt_yr / world_beccs,
+    high_threshold = 7 * potential_Gt_yr / world_beccs,
+    med_global = 3,
+    high_global = 7,
+    global_potential = world_beccs,
+    unit = "GtCO2/yr"
+  ) %>%
+  select(Sr33, technology, potential, med_threshold, high_threshold, med_global, high_global, global_potential, unit)
+
+# Calculate regional thresholds for Fossil CCS
+thresholds_fossil_ccs <- potential_fossil_ccs_2050 %>%
+  mutate(
+    potential = potential_Gt_yr,
+    med_threshold = 3.8 * potential_Gt_yr / world_fossil_ccs,
+    high_threshold = 8.8 * potential_Gt_yr / world_fossil_ccs,
+    med_global = 3.8,
+    high_global = 8.8,
+    global_potential = world_fossil_ccs,
+    unit = "GtCO2/yr"
+  ) %>%
+  select(Sr33, technology, potential, med_threshold, high_threshold, med_global, high_global, global_potential, unit)
+
+# Combine with existing thresholds
+all_regional_thresholds <- bind_rows(
+  all_regional_thresholds,
+  thresholds_beccs,
+  thresholds_fossil_ccs
+)
+
+cat("   - BECCS and Fossil CCS thresholds calculated\n")
+
+# ============================================================================
+# DEFINE PLOT SETTINGS
+# ============================================================================
 
 # Define scenario aesthetics with Set1 colors
 set1_colors <- brewer.pal(9, "Set1")
@@ -351,107 +494,23 @@ plot_theme_white <- theme_bw() +
   )
 
 # ============================================================================
-# PART 2A: CALCULATE BECCS AND FOSSIL CCS REGIONAL THRESHOLDS
-# ============================================================================
-# (Must be done here after df_load_data is available)
-
-# Extract 2050 values for BECCS - using average across all scenarios
-potential_beccs_2050 <- df_load_data %>%
-  filter(variable == "Car_Rem_Bio_wit_CCS", Year == 2050) %>%
-  mutate(value_Gt = value / 1000) %>%  # Convert MtCO2 to GtCO2
-  group_by(Region) %>%
-  summarise(potential_Gt_yr = mean(value_Gt, na.rm = TRUE), .groups = "drop") %>%
-  rename(Sr33 = Region) %>%
-  mutate(technology = "BECCS")
-
-# Extract 2050 values for Fossil CCS - using average across all scenarios
-potential_fossil_ccs_2050 <- df_load_data %>%
-  filter(variable == "Car_Seq_CCS_Fos", Year == 2050) %>%
-  mutate(value_Gt = value / 1000) %>%  # Convert MtCO2 to GtCO2
-  group_by(Region) %>%
-  summarise(potential_Gt_yr = mean(value_Gt, na.rm = TRUE), .groups = "drop") %>%
-  rename(Sr33 = Region) %>%
-  mutate(technology = "Fossil_CCS")
-
-# Get World totals for scaling
-world_beccs <- potential_beccs_2050 %>%
-  filter(Sr33 == "World") %>%
-  pull(potential_Gt_yr)
-
-world_fossil_ccs <- potential_fossil_ccs_2050 %>%
-  filter(Sr33 == "World") %>%
-  pull(potential_Gt_yr)
-
-# Calculate regional thresholds for BECCS (IPCC global: 3-7 GtCO2/yr)
-thresholds_beccs <- potential_beccs_2050 %>%
-  mutate(
-    potential = potential_Gt_yr,
-    med_threshold = 3 * potential_Gt_yr / world_beccs,
-    high_threshold = 7 * potential_Gt_yr / world_beccs,
-    med_global = 3,
-    high_global = 7,
-    global_potential = world_beccs,
-    unit = "GtCO2/yr"
-  ) %>%
-  select(Sr33, technology, potential, med_threshold, high_threshold, med_global, high_global, global_potential, unit)
-
-# Calculate regional thresholds for Fossil CCS (IPCC global: 3.8-8.8 GtCO2/yr)
-thresholds_fossil_ccs <- potential_fossil_ccs_2050 %>%
-  mutate(
-    potential = potential_Gt_yr,
-    med_threshold = 3.8 * potential_Gt_yr / world_fossil_ccs,
-    high_threshold = 8.8 * potential_Gt_yr / world_fossil_ccs,
-    med_global = 3.8,
-    high_global = 8.8,
-    global_potential = world_fossil_ccs,
-    unit = "GtCO2/yr"
-  ) %>%
-  select(Sr33, technology, potential, med_threshold, high_threshold, med_global, high_global, global_potential, unit)
-
-cat("\n==========================================\n")
-cat("BECCS and Fossil CCS Regional Thresholds Calculated\n")
-cat("==========================================\n")
-
-# Combine with existing thresholds from PART 1
-all_regional_thresholds <- bind_rows(
-  all_regional_thresholds,  # Existing thresholds (Wind, Solar, Bio, CCS geol)
-  thresholds_beccs,
-  thresholds_fossil_ccs
-)
-
-# ============================================================================
-# UPDATED FUNCTION DEFINITIONS
+# DEFINE PLOT FUNCTIONS
 # ============================================================================
 
+cat("[4/6] Defining plot functions...\n")
 
+# Function for plots with regional thresholds
 create_absolute_value_plot_regional <- function(var_name, title, unit_label, 
                                                 technology_name, current_region,
                                                 convert_to_gt = FALSE) {
   
-  # DEBUG: Print what we're looking for
-  cat(sprintf("DEBUG: Looking for technology='%s', region='%s'\n", technology_name, current_region))
-  
-  # Get thresholds for this region and technology
   region_thresholds <- all_regional_thresholds %>%
     filter(Sr33 == current_region, technology == technology_name)
   
-  # DEBUG: Show what we found
-  cat(sprintf("DEBUG: Found %d rows\n", nrow(region_thresholds)))
-  if(nrow(region_thresholds) > 0) {
-    cat("DEBUG: Threshold values:\n")
-    print(region_thresholds %>% select(Sr33, technology, med_threshold, high_threshold))
-  }
-  
-  if(nrow(region_thresholds) == 0) {
-    cat("Warning: No thresholds found for", technology_name, "in", current_region, "\n")
-    return(NULL)
-  }
+  if(nrow(region_thresholds) == 0) return(NULL)
   
   y_medium <- region_thresholds$med_threshold[1]
   y_high <- region_thresholds$high_threshold[1]
-  
-  # DEBUG: Print the actual threshold values being used
-  cat(sprintf("DEBUG: Using y_medium=%.2f, y_high=%.2f\n\n", y_medium, y_high))
   
   plot_data <- df_load_data_region %>% filter(variable == var_name)
   
@@ -476,12 +535,12 @@ create_absolute_value_plot_regional <- function(var_name, title, unit_label,
     labs(x = NULL, y = unit_label, title = title) +
     plot_theme_white +
     scale_color_manual(values = scenario_colors) +
-    scale_linetype_manual(values = scenario_linetypes) +     scale_shape_manual(values = scenario_shapes) +
+    scale_linetype_manual(values = scenario_linetypes) +
+    scale_shape_manual(values = scenario_shapes) +
     scale_x_continuous(breaks = seq(2000, 2100, by = 10))
 }
 
-
-# Function for plots with fixed global thresholds (not regional)
+# Function for plots with fixed global thresholds
 create_absolute_value_plot <- function(var_name, title, y_medium, y_high, unit_label,
                                        convert_to_gt = FALSE) {
   
@@ -508,12 +567,11 @@ create_absolute_value_plot <- function(var_name, title, y_medium, y_high, unit_l
     labs(x = NULL, y = unit_label, title = title) +
     plot_theme_white +
     scale_color_manual(values = scenario_colors) +
-    scale_linetype_manual(values = scenario_linetypes) +     scale_shape_manual(values = scenario_shapes) +
+    scale_linetype_manual(values = scenario_linetypes) +
+    scale_shape_manual(values = scenario_shapes) +
     scale_x_continuous(breaks = seq(2000, 2100, by = 10))
 }
 
-
-# Keep all other function definitions from your original script
 create_decadal_change_plot <- function(var_name, title, y_medium, y_high, 
                                        y_label = "10-Year Change (%)",
                                        positive_threshold = FALSE) {
@@ -543,7 +601,8 @@ create_decadal_change_plot <- function(var_name, title, y_medium, y_high,
       labs(x = NULL, y = y_label, title = title) +
       plot_theme_white +
       scale_color_manual(values = scenario_colors) +
-      scale_linetype_manual(values = scenario_linetypes) +     scale_shape_manual(values = scenario_shapes) +
+      scale_linetype_manual(values = scenario_linetypes) +
+      scale_shape_manual(values = scenario_shapes) +
       scale_x_discrete(breaks = c("2010-20", "2030-40", "2050-60", "2070-80", "2090-00"))
   } else {
     plot_data %>%
@@ -560,7 +619,8 @@ create_decadal_change_plot <- function(var_name, title, y_medium, y_high,
       labs(x = NULL, y = y_label, title = title) +
       plot_theme_white +
       scale_color_manual(values = scenario_colors) +
-      scale_linetype_manual(values = scenario_linetypes) +     scale_shape_manual(values = scenario_shapes) +
+      scale_linetype_manual(values = scenario_linetypes) +
+      scale_shape_manual(values = scenario_shapes) +
       scale_x_discrete(breaks = c("2010-20", "2030-40", "2050-60", "2070-80", "2090-00"))
   }
 }
@@ -609,7 +669,8 @@ create_investment_ratio_plot <- function(mitigation_vars, baseline_vars, title,
     labs(x = NULL, y = "Investment Ratio", title = title) +
     plot_theme_white +
     scale_color_manual(values = scenario_colors) +
-    scale_linetype_manual(values = scenario_linetypes) +     scale_shape_manual(values = scenario_shapes) +
+    scale_linetype_manual(values = scenario_linetypes) +
+    scale_shape_manual(values = scenario_shapes) +
     scale_x_discrete(breaks = c("2010-20", "2030-40", "2050-60", "2070-80", "2090-00"))
 }
 
@@ -643,7 +704,8 @@ create_share_plot <- function(var_num, var_denom, title, y_medium, y_high) {
     labs(x = NULL, y = "10-Year Share Change (pp)", title = title) +
     plot_theme_white +
     scale_color_manual(values = scenario_colors) +
-    scale_linetype_manual(values = scenario_linetypes) +     scale_shape_manual(values = scenario_shapes) +
+    scale_linetype_manual(values = scenario_linetypes) +
+    scale_shape_manual(values = scenario_shapes) +
     scale_x_discrete(breaks = c("2010-20", "2030-40", "2050-60", "2070-80", "2090-00"))
 }
 
@@ -674,7 +736,8 @@ create_single_sector_energy_plot <- function(var_name, title, y_medium, y_high) 
     labs(x = NULL, y = "10-Year Change (%)", title = title) +
     plot_theme_white +
     scale_color_manual(values = scenario_colors) +
-    scale_linetype_manual(values = scenario_linetypes) +     scale_shape_manual(values = scenario_shapes) +
+    scale_linetype_manual(values = scenario_linetypes) +
+    scale_shape_manual(values = scenario_shapes) +
     scale_x_discrete(breaks = c("2010-20", "2030-40", "2050-60", "2070-80", "2090-00"))
 }
 
@@ -708,45 +771,26 @@ create_share_change_plot <- function(var_num, var_denom, title, y_medium, y_high
     labs(x = NULL, y = "10-Year Change (pp)", title = title) +
     plot_theme_white +
     scale_color_manual(values = scenario_colors) +
-    scale_linetype_manual(values = scenario_linetypes) +     scale_shape_manual(values = scenario_shapes) +
+    scale_linetype_manual(values = scenario_linetypes) +
+    scale_shape_manual(values = scenario_shapes) +
     scale_x_discrete(breaks = c("2010-20", "2030-40", "2050-60", "2070-80", "2090-00"))
 }
 
 # ============================================================================
-# LOOP THROUGH REGIONS
+# LOOP THROUGH REGIONS AND CREATE FIGURES
 # ============================================================================
 
-regions_to_plot <- c("World","R5OECD90+EU", "R5ASIA", "R5LAM", "R5MAF", "R5REF")
+# Define regions to plot (modify this list as needed)
+regions_to_plot <- c("World")
+# To plot additional regions, uncomment and modify:
+# regions_to_plot <- c("World", "R5OECD90+EU", "R5ASIA", "R5LAM", "R5MAF", "R5REF")
 
-cat("\n==========================================\n")
-cat("Available regions in the dataset:\n")
-cat("==========================================\n")
-unique_regions <- unique(df_load_data$Region)
-for(i in 1:length(unique_regions)) {
-  cat(sprintf("%2d. %s\n", i, unique_regions[i]))
-}
-cat("==========================================\n\n")
-
-cat("Regions to be plotted:\n")
-for(i in 1:length(regions_to_plot)) {
-  cat(sprintf("%2d. %s\n", i, regions_to_plot[i]))
-}
-cat("\n")
-
-# Also add this check before the loop to verify the data structure
-cat("\n==========================================\n")
-cat("Verifying BECCS/Fossil CCS thresholds:\n")
-cat("==========================================\n")
-print(all_regional_thresholds %>%
-        filter(technology %in% c("BECCS", "Fossil_CCS"), Sr33 == "R5ASIA") %>%
-        select(Sr33, technology, potential, med_threshold, high_threshold))
-cat("==========================================\n\n")
+cat("[5/6] Creating feasibility sensitivity analysis figures...\n")
+cat("   - Regions to plot:", paste(regions_to_plot, collapse = ", "), "\n\n")
 
 for(region_name in regions_to_plot) {
   
-  cat("\n==========================================\n")
-  cat("Processing region:", region_name, "\n")
-  cat("==========================================\n")
+  cat("   Processing:", region_name, "...\n")
   
   # Filter data for current region
   df_load_data_region <- df_load_data %>% 
@@ -756,13 +800,12 @@ for(region_name in regions_to_plot) {
                                                   "TPCC_noBECCS", "TPCC_noEW")))
   
   if(nrow(df_load_data_region) == 0) {
-    cat("âš  No data found for region:", region_name, "\n")
+    cat("     Warning: No data found for", region_name, "\n")
     next
   }
   
-  cat("âœ“ Data rows found:", nrow(df_load_data_region), "\n")
-  
-  # CREATE ALL PLOTS - UPDATED ROW 1 WITH REGIONAL THRESHOLDS
+  # CREATE ALL PLOTS
+  # Row 1: GEOLOGICAL FEASIBILITY
   g_biomass <- create_absolute_value_plot_regional('Prm_Ene_Bio', "Biomass Potential", "EJ/yr", 
                                                    "Bioenergy", region_name)
   g_wind_pot <- create_absolute_value_plot_regional('Prm_Ene_Win', "Wind Potential", "EJ/yr", 
@@ -772,7 +815,7 @@ for(region_name in regions_to_plot) {
   g_ccs_geol <- create_absolute_value_plot_regional('Cum_Car_Seq_CCS', "CCS Geological Potential", "GtCO2", 
                                                     "CCS", region_name, convert_to_gt = TRUE)
   
-  # Row 2: ECONOMIC FEASIBILITY (unchanged - still using global thresholds)
+  # Row 2: ECONOMIC FEASIBILITY
   g_gdp_loss <- create_absolute_value_plot('Pol_Cos_GDP_Los_rat', "GDP Loss", 5, 10, "GDP Loss (%)")
   g_carbon_price <- create_absolute_value_plot('Prc_Car_NPV_5pc', "Carbon Price", 60, 120, "USD/tCO2")
   g_energy_inv <- create_investment_ratio_plot(
@@ -781,7 +824,7 @@ for(region_name in regions_to_plot) {
     "Energy Investments", 1.2, 1.5
   )
   
-  # Row 3 & 4 & 5: TECHNOLOGICAL FEASIBILITY (unchanged)
+  # Row 3 & 4: TECHNOLOGICAL FEASIBILITY
   g_wind <- create_share_plot('Sec_Ene_Ele_Win', 'Sec_Ene_Ele', "Wind Scale-up", 10, 20)
   g_solar <- create_share_plot('Sec_Ene_Ele_Solar', 'Sec_Ene_Ele', "Solar Scale-up", 10, 20)
   g_nuclear <- create_share_plot('Sec_Ene_Ele_Nuc', 'Sec_Ene_Ele', "Nuclear Scale-up", 5, 10)
@@ -794,7 +837,7 @@ for(region_name in regions_to_plot) {
   g_fossil_ccs <- create_absolute_value_plot_regional('Car_Seq_CCS_Fos', "Fossil CCS Scale-up", "GtCO2/yr", 
                                                       "Fossil_CCS", region_name, convert_to_gt = TRUE)
   
-  # Row 5 & 6: SOCIO-CULTURAL FEASIBILITY (unchanged)
+  # Row 5 & 6: SOCIO-CULTURAL FEASIBILITY
   g_total_energy <- create_single_sector_energy_plot('Fin_Ene', "Total Energy Demand", -10, -20)
   g_industry_energy <- create_single_sector_energy_plot('Fin_Ene_Ind', "Industry Energy Demand", -10, -20)
   g_transport_energy <- create_single_sector_energy_plot('Fin_Ene_Tra', "Transport Energy Demand", -10, -20)
@@ -831,7 +874,7 @@ for(region_name in regions_to_plot) {
   
   # CREATE COMBINED FIGURE
   g_combined <- ggdraw() +
-    # Row 1: GEOLOGICAL FEASIBILITY (now with regional thresholds)
+    # Row 1: GEOLOGICAL FEASIBILITY
     draw_plot(g_biomass + theme(legend.position = "none"), 0.01, row1_y, plot_width, row_height) +
     draw_plot(g_wind_pot + theme(legend.position = "none"), 0.26, row1_y, plot_width, row_height) +
     draw_plot(g_solar_pot + theme(legend.position = "none"), 0.51, row1_y, plot_width, row_height) +
@@ -871,18 +914,10 @@ for(region_name in regions_to_plot) {
     
     # Add plot labels
     draw_plot_label(
-      label = c('a', 'b', 'c', 'd',
-                'e', 'f', 'g',
-                'h', 'i', 'j', 'k',
-                'l', 'm', 'n', 'o',
-                'p','q', 'r', 's' ,
-                't','u', 'v', 'w'),
-      x = c(0, 0.25, 0.50, 0.75,
-            0, 0.25, 0.50,
-            0, 0.25, 0.50, 0.75,
-            0, 0.25, 0.50, 0.75,
-            0, 0.25, 0.50, 0.75,
-            0, 0.25, 0.50, 0.75),
+      label = c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+                'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w'),
+      x = c(0, 0.25, 0.50, 0.75, 0, 0.25, 0.50, 0, 0.25, 0.50, 0.75,
+            0, 0.25, 0.50, 0.75, 0, 0.25, 0.50, 0.75, 0, 0.25, 0.50, 0.75),
       y = c(rep(row1_y + row_height - 0.01, 4),
             rep(row2_y + row_height - 0.01, 3),
             rep(row3_y + row_height - 0.01, 4),
@@ -900,18 +935,27 @@ for(region_name in regions_to_plot) {
   ggsave(filename = filename, g_combined, 
          width = 350, height = 450, units = 'mm', dpi = 500)
   
-  cat("âœ“ Saved:", filename, "\n")
+  cat("     Saved:", filename, "\n")
 }
 
-cat("\n==========================================\n")
-cat("All regions processed!\n")
-cat("==========================================\n")
+# ============================================================================
+# SUMMARY
+# ============================================================================
 
-# Print summary of thresholds
-cat("\n==========================================\n")
-cat("Regional Thresholds Summary:\n")
-cat("==========================================\n")
-print(all_regional_thresholds %>%
-        filter(Sr33 %in% regions_to_plot) %>%
-        select(Sr33, technology, potential, med_threshold, high_threshold) %>%
-        arrange(technology, Sr33))
+cat("\n[6/6] Generation complete!\n")
+
+cat("\n========================================\n")
+cat("FIGURE GENERATION COMPLETE\n")
+cat("========================================\n")
+cat("Generated sensitivity analysis figures for:\n")
+for(region in regions_to_plot) {
+  cat("  -", region, "\n")
+}
+cat("\nEach figure compares 6 TPCC variants:\n")
+cat("  - TPCC (base scenario)\n")
+cat("  - TPCC_a (alternative)\n")
+cat("  - TPCC_DAChigh (high DAC)\n")
+cat("  - TPCC_hydhigh (high hydrogen)\n")
+cat("  - TPCC_noBECCS (no BECCS)\n")
+cat("  - TPCC_noEW (no enhanced weathering)\n")
+cat("========================================\n")

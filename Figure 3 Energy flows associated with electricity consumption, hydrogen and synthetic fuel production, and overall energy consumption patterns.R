@@ -1,17 +1,80 @@
+# ============================================================================
+# ENERGY FLOWS AND SECTOR ANALYSIS FIGURE
+# ============================================================================
+# 
+# DESCRIPTION:
+# This script creates a comprehensive 6-panel figure analyzing energy flows
+# and sectoral energy consumption patterns across multiple climate scenarios.
+# The figure combines Sankey diagrams showing energy transformation pathways
+# with bar charts analyzing final energy consumption by sector.
+#
+# FIGURE LAYOUT:
+# - Panels a-d: Energy flow Sankey diagrams (alluvial plots)
+#   - Shows energy transformation from primary sources through electricity/
+#     hydrogen production to final demand
+#   - Includes losses at each conversion step
+#   - Panel a: TPCC 2080
+#   - Panel b: TPCC 2100
+#   - Panel c: LCC 2100
+#   - Panel d: HCC 2100
+#
+# - Panels e-f: Sectoral energy consumption analysis at 2100
+#   - Panel e: Absolute energy consumption (EJ/yr) by sector
+#   - Panel f: Percentage share by energy type and sector
+#   - Sectors analyzed: Total, Industry, Transport, Buildings
+#   - Energy types: Fossil, Biomass, Electricity, Hydrogen, Synfuel
+#
+# ============================================================================
+# REQUIRED DATA FILES:
+# ============================================================================
+# 
+# Place the following file in: userdirectory/data/
+#
+# 1. IAMCTemplate_Iteon_global.gdx
+
+# ============================================================================
+# REQUIRED R PACKAGES:
+# ============================================================================
+# 
+# Install required packages if not already installed:
+# install.packages(c("tidyverse", "ggalluvial", "gdxrrw", "cowplot", "ggpubr"))
+
+# ============================================================================
+
+# Load required libraries
 library(tidyverse)
 library(ggalluvial)
 library(gdxrrw)
 library(cowplot)
+library(ggpubr)
 
+# --------------------------------
 # Setup GAMS
+# --------------------------------
+# Update this path to match your GAMS installation
 igdx("/Library/Frameworks/GAMS.framework/Versions/44/Resources")
+
+# --------------------------------
+# File paths
+# --------------------------------
+# IMPORTANT: Update 'userdirectory' to your actual directory path
+data_dir <- "/Users/suku/Downloads/R_Code_TPCC-TPCC/data_TPCC/data"
+gdx_file <- file.path(data_dir, "IAMCTemplate_Iteon_global.gdx")
+
+# Verify file exists
+if (!file.exists(gdx_file)) stop("GDX file not found: ", gdx_file)
+
+cat("\n========================================\n")
+cat("ENERGY FLOW FIGURE GENERATOR\n")
+cat("========================================\n")
 
 # ============================================================================
 # PART 1: LOAD DATA FOR ENERGY FLOW DIAGRAMS (Panels a-d)
 # ============================================================================
 
-gdx_file_flow <- "/Users/suku/Downloads/IAMCTemplate_Iteon_global (5).gdx"
-merged_data_flow <- rgdx(gdx_file_flow, list(name = "mergedIAMC4AIM"))
+cat("\n[1/5] Loading energy flow data...\n")
+
+merged_data_flow <- rgdx(gdx_file, list(name = "mergedIAMC4AIM"))
 df_study <- data.frame(merged_data_flow$val)
 
 for(i in 1:length(merged_data_flow$uels)) {
@@ -31,12 +94,15 @@ study_scenarios <- c("HCC", "LCC", "TPCC")
 df_study <- df_study %>%
   filter(Scenario %in% study_scenarios)
 
+cat("   - Loaded", length(unique(df_study$Scenario)), "scenarios\n")
+
 # ============================================================================
 # PART 2: LOAD DATA FOR SECTOR ANALYSIS (Panels e-f)
 # ============================================================================
 
-gdx_file_sector <- "/Users/suku/Downloads/IAMCTemplate_Iteon_global (5).gdx"
-merged_data_sector <- rgdx(gdx_file_sector, list(name = "mergedIAMC4AIM"))
+cat("[2/5] Loading sector analysis data...\n")
+
+merged_data_sector <- rgdx(gdx_file, list(name = "mergedIAMC4AIM"))
 df_load_data <- data.frame(merged_data_sector$val)
 
 for(i in 1:length(merged_data_sector$uels)) {
@@ -46,6 +112,8 @@ colnames(df_load_data) <- c("Model", "Scenario", "Region", "variable", "Unit", "
 df_load_data <- df_load_data %>% 
   mutate(Year = as.numeric(Year), value = as.numeric(value)) %>%
   filter(Region == "World")
+
+cat("   - Sector data loaded successfully\n")
 
 # ============================================================================
 # CALCULATE DERIVED VARIABLES (LOSSES) FOR ENERGY FLOW
@@ -173,6 +241,8 @@ create_sankey <- function(data, year_val, scenario_val, show_title = FALSE) {
 # CREATE PANELS a-d: ENERGY FLOW DIAGRAMS
 # ============================================================================
 
+cat("[3/5] Creating energy flow Sankey diagrams...\n")
+
 # Panel a: TPCC 2080
 p_a <- create_sankey(df_study, 2080, "TPCC", show_title = TRUE)
 
@@ -185,9 +255,13 @@ p_c <- create_sankey(df_study, 2100, "LCC", show_title = TRUE)
 # Panel d: HCC 2100
 p_d <- create_sankey(df_study, 2100, "HCC", show_title = TRUE)
 
+cat("   - Created 4 Sankey diagrams\n")
+
 # ============================================================================
 # CREATE PANELS e-f: SECTOR ANALYSIS
 # ============================================================================
+
+cat("[4/5] Creating sector analysis plots...\n")
 
 # Define variable mappings for sectors
 var_total <- tribble(
@@ -351,9 +425,13 @@ p_f <- ggplot(plot_data_percentage, aes(x = Scenario, y = percentage, fill = Ene
   ) +
   guides(fill = guide_legend(nrow = 1, title.position = "top", title.hjust = 0.5))
 
+cat("   - Created absolute and percentage sector plots\n")
+
 # ============================================================================
 # COMBINE ALL PANELS INTO FINAL FIGURE
 # ============================================================================
+
+cat("[5/5] Combining panels and creating final figure...\n")
 
 # Remove legend from panel f first
 p_f_no_legend <- p_f + theme(legend.position = "none")
@@ -386,10 +464,7 @@ p_main <- plot_grid(
   rel_heights = c(1.2, 0.5)
 )
 
-# Create a manual legend using base ggplot (simplest approach)
-library(ggpubr)
-
-# Create a basic plot that will generate a real legend with rectangular keys
+# Create shared legend
 basic_plot <- ggplot(data.frame(
   x = 1:5, 
   y = 1:5,
@@ -411,14 +486,8 @@ basic_plot <- ggplot(data.frame(
   ) +
   guides(fill = guide_legend(nrow = 1))
 
-# Try to get legend using ggpubr
-if(requireNamespace("ggpubr", quietly = TRUE)) {
-  legend <- ggpubr::get_legend(basic_plot)
-} else {
-  legend <- cowplot::get_legend(basic_plot)
-}
-
-print(paste("Legend class after extraction:", class(legend)[1]))
+# Extract legend
+legend <- get_legend(basic_plot)
 
 # Add legend at the very bottom of everything
 final_plot <- plot_grid(
@@ -428,10 +497,12 @@ final_plot <- plot_grid(
   rel_heights = c(1, 0.05)
 )
 
-# Display the plot
 print(final_plot)
 
-# Save the plot
+# ============================================================================
+# SAVE OUTPUT
+# ============================================================================
+
 dir.create("output", showWarnings = FALSE)
 
 ggsave(filename = "output/combined_energy_figure.png", 
@@ -442,3 +513,14 @@ ggsave(filename = "output/combined_energy_figure.pdf",
        plot = final_plot, 
        width = 350, height = 280, units = "mm", dpi = 300)
 
+cat("\n========================================\n")
+cat("FIGURE GENERATION COMPLETE\n")
+cat("========================================\n")
+cat("Output files saved in 'output/' directory:\n")
+cat("  - combined_energy_figure.png (350x280 mm, 300 dpi)\n")
+cat("  - combined_energy_figure.pdf\n\n")
+cat("Figure panels:\n")
+cat("  a-d: Energy flow Sankey diagrams\n")
+cat("  e:   Absolute sectoral energy consumption\n")
+cat("  f:   Percentage share by energy type\n")
+cat("========================================\n")

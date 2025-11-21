@@ -1,12 +1,45 @@
-# ================================
-# Combined Figure: CCS and CDR Analysis (6 panels)
-# Left panels (a,c,e): CCS
-# Right panels (b,d,f): CDR
-# Top row (a,b): Cumulative emissions vs Cumulative deployment
-# Middle row (c,d): Cumulative emissions vs Peak annual deployment
-# Bottom row (e,f): Peak annual deployment vs 2100 values
-# ================================
+# ============================================================================
+# CCS AND CDR COMPARISON WITH IPCC AR6 DATABASE
+# ============================================================================
+# 
+# DESCRIPTION:
+# This script creates a 6-panel comparison figure analyzing Carbon Capture 
+# and Storage (CCS) and Carbon Dioxide Removal (CDR) across multiple climate 
+# scenarios, comparing study scenarios against the IPCC AR6 scenarios database.
+#
+# FIGURE LAYOUT:
+# - Left column (panels a, c, e): CCS analysis
+# - Right column (panels b, d, f): CDR analysis
+# - Top row: Cumulative emissions vs cumulative deployment (2020-2100)
+# - Middle row: Cumulative emissions vs peak annual deployment
+# - Bottom row: Peak annual deployment vs 2100 values
+#
+# ============================================================================
+# REQUIRED DATA FILES:
+# ============================================================================
+# 
+# Place the following files in: userdirectory/data/
+#
+# 1. IAMCTemplate_Iteon_global.gdx
+#    - Your study's GDX output file containing scenario results
+#
+# 2. AR6_Scenarios_Database_metadata_indicators_v1.1.xlsx
+#    - IPCC AR6 metadata file
+#    - Download from: https://data.ece.iiasa.ac.at/ar6/
+#
+# 3. AR6_Scenarios_Database_World_v1.1.csv
+#    - IPCC AR6 world-level scenario data
+#    - Download from: https://data.ece.iiasa.ac.at/ar6/
+#
+# ============================================================================
+# REQUIRED R PACKAGES:
+# ============================================================================
+# 
+# Install required packages if not already installed:
+# install.packages(c("tidyverse", "gdxrrw", "cowplot", "readxl", 
+#                    "readr", "zoo", "RColorBrewer"))
 
+# Load required libraries
 library(tidyverse)
 library(gdxrrw)
 library(cowplot)
@@ -18,18 +51,33 @@ library(RColorBrewer)
 # --------------------------------
 # Setup GAMS
 # --------------------------------
+# IMPORTANT: Update this path to match your GAMS installation
 igdx("/Library/Frameworks/GAMS.framework/Versions/44/Resources")
 
 # --------------------------------
 # File paths
 # --------------------------------
-gdx_file <- "/Users/suku/Downloads/IAMCTemplate_Iteon_global (5).gdx"
-AR6_meta_file <- "/Users/suku/Downloads/1668008312256-AR6_Scenarios_Database_World_v1.1.csv/AR6_Scenarios_Database_metadata_indicators_v1.1.xlsx"
-AR6_world_file <- "/Users/suku/Downloads/1668008312256-AR6_Scenarios_Database_World_v1.1.csv/AR6_Scenarios_Database_World_v1.1.csv"
+# IMPORTANT: Update 'userdirectory' to your actual directory path
+data_dir <- "/Users/suku/Downloads/R_Code_TPCC-TPCC/data_TPCC/data"
+
+gdx_file <- file.path(data_dir, "IAMCTemplate_Iteon_global.gdx")
+AR6_meta_file <- file.path(data_dir, "AR6_Scenarios_Database_metadata_indicators_v1.1.xlsx")
+AR6_world_file <- file.path(data_dir, "AR6_Scenarios_Database_World_v1.1.csv")
+
+# Verify files exist
+if (!file.exists(gdx_file)) stop("GDX file not found: ", gdx_file)
+if (!file.exists(AR6_meta_file)) stop("AR6 metadata file not found: ", AR6_meta_file)
+if (!file.exists(AR6_world_file)) stop("AR6 world data file not found: ", AR6_world_file)
+
+cat("\n========================================\n")
+cat("CCS/CDR COMPARISON FIGURE GENERATOR\n")
+cat("========================================\n")
 
 # ============================================================================
 # LOAD YOUR STUDY DATA
 # ============================================================================
+
+cat("\n[1/6] Loading study data...\n")
 
 merged_data <- rgdx(gdx_file, list(name = "mergedIAMC4AIM"))
 df_study <- data.frame(merged_data$val)
@@ -45,7 +93,7 @@ df_study <- df_study %>%
   ) %>%
   filter(Region == "World")
 
-# Filter scenarios (removed High Emissions)
+# Filter scenarios (modify this list as needed)
 study_scenarios <- c(
   "TPCC",
   "LCC",
@@ -53,12 +101,13 @@ study_scenarios <- c(
 )
 
 df_study <- df_study %>% filter(Scenario %in% study_scenarios)
+cat("   - Loaded", length(unique(df_study$Scenario)), "scenarios\n")
 
 # ============================================================================
 # CALCULATE YOUR STUDY VALUES (ALL METRICS)
 # ============================================================================
 
-cat("\n=== Calculating Study Metrics ===\n")
+cat("[2/6] Calculating study metrics...\n")
 
 # Cumulative emissions at 2100
 df_study_emissions <- df_study %>%
@@ -107,11 +156,13 @@ df_study_all <- df_study_emissions %>%
   left_join(df_study_cdr_peak, by = c("Model", "Scenario")) %>%
   left_join(df_study_cdr_2100, by = c("Model", "Scenario"))
 
+cat("   - Calculated CCS and CDR metrics for all scenarios\n")
+
 # ============================================================================
 # LOAD AR6 DATA
 # ============================================================================
 
-cat("\n=== Loading AR6 data ===\n")
+cat("[3/6] Loading AR6 reference data...\n")
 
 # Labels + cumulative emissions
 df_AR6_labels <- read_xlsx(AR6_meta_file, sheet = "meta_Ch3vetted_withclimate") %>%
@@ -128,6 +179,8 @@ df_AR6_labels <- read_xlsx(AR6_meta_file, sheet = "meta_Ch3vetted_withclimate") 
     Cumulative_Emissions = suppressWarnings(as.numeric(Cumulative_Emissions))
   ) %>%
   filter(Category %in% c("C1", "C2", "C3"))
+
+cat("   - Loaded", nrow(df_AR6_labels), "AR6 scenarios\n")
 
 # Read AR6 World CSV
 df_AR6_world_wide <- read_csv(AR6_world_file, show_col_types = FALSE) %>%
@@ -170,7 +223,7 @@ interpolate_annual <- function(df) {
 # CALCULATE AR6 CCS METRICS
 # ============================================================================
 
-cat("\n=== Calculating AR6 CCS metrics ===\n")
+cat("[4/6] Calculating AR6 CCS metrics...\n")
 
 # Raw CCS data
 df_AR6_ccs_raw <- df_AR6_world_long %>%
@@ -226,7 +279,7 @@ df_AR6_ccs_2100 <- df_AR6_world_long %>%
 # CALCULATE AR6 CDR METRICS
 # ============================================================================
 
-cat("\n=== Calculating AR6 CDR metrics ===\n")
+cat("[5/6] Calculating AR6 CDR metrics...\n")
 
 cdr_vars <- c(
   "Carbon Sequestration|CCS|Biomass",
@@ -344,6 +397,8 @@ theme_common <- theme_bw() +
 # ============================================================================
 # CREATE INDIVIDUAL PLOTS
 # ============================================================================
+
+cat("[6/6] Creating plots...\n")
 
 # Panel (a): Cumulative emissions vs Cumulative CCS
 p_a <- ggplot() +
@@ -500,7 +555,7 @@ final_plot <- plot_grid(
 print(final_plot)
 
 # ============================================================================
-# SAVE
+# SAVE OUTPUT
 # ============================================================================
 
 dir.create("output", showWarnings = FALSE)
@@ -517,13 +572,17 @@ ggsave(
   width = 300, height = 360, units = "mm", dpi = 300
 )
 
-cat("\n=== Combined 6-panel plot saved successfully ===\n")
-cat("\nLayout:\n")
-cat("Left panels (CCS):  a. Cum. emissions vs Cum. CCS\n")
-cat("                    c. Cum. emissions vs Peak CCS\n")
-cat("                    e. CCS at 2100 vs Peak CCS\n")
-cat("Right panels (CDR): b. Cum. emissions vs Cum. CDR\n")
-cat("                    d. Cum. emissions vs Peak CDR\n")
-cat("                    f. CDR at 2100 vs Peak CDR\n")
-cat("\nScenarios: TPCC, LCC, HCC\n")
-
+cat("\n========================================\n")
+cat("FIGURE GENERATION COMPLETE\n")
+cat("========================================\n")
+cat("Output files saved in 'output/' directory:\n")
+cat("  - combined_6panel_ccs_cdr.png (300 dpi)\n")
+cat("  - combined_6panel_ccs_cdr.pdf\n\n")
+cat("Figure panels:\n")
+cat("  Left (CCS):   a. Cumulative emissions vs Cumulative CCS\n")
+cat("                c. Cumulative emissions vs Peak CCS\n")
+cat("                e. CCS at 2100 vs Peak CCS\n")
+cat("  Right (CDR):  b. Cumulative emissions vs Cumulative CDR\n")
+cat("                d. Cumulative emissions vs Peak CDR\n")
+cat("                f. CDR at 2100 vs Peak CDR\n")
+cat("========================================\n")
