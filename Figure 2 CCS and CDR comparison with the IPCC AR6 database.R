@@ -57,8 +57,8 @@ igdx("/Library/Frameworks/GAMS.framework/Versions/44/Resources")
 # --------------------------------
 # File paths
 # --------------------------------
-# IMPORTANT: Update 'userdirectory' to your actual directory path
-data_dir <- "/Users/suku/Downloads/R_Code_TPCC-TPCC/data_TPCC/data"
+# Defaults to ./data relative to this script's working directory; override if your data/ lives elsewhere
+data_dir <- "data"
 
 gdx_file <- file.path(data_dir, "IAMCTemplate_Iteon_global.gdx")
 AR6_meta_file <- file.path(data_dir, "AR6_Scenarios_Database_metadata_indicators_v1.1.xlsx")
@@ -563,13 +563,13 @@ dir.create("output", showWarnings = FALSE)
 ggsave(
   filename = "output/combined_6panel_ccs_cdr.png",
   plot = final_plot,
-  width = 300, height = 360, units = "mm", dpi = 300
+  width = 272.3, height = 306.9, units = "mm", dpi = 300, bg = "white"
 )
 
 ggsave(
   filename = "output/combined_6panel_ccs_cdr.pdf",
   plot = final_plot,
-  width = 300, height = 360, units = "mm", dpi = 300
+  width = 272.3, height = 306.9, units = "mm", dpi = 300, bg = "white"
 )
 
 cat("\n========================================\n")

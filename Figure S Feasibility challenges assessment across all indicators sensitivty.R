@@ -78,8 +78,8 @@ igdx("/Library/Frameworks/GAMS.framework/Versions/44/Resources")
 # --------------------------------
 # File paths
 # --------------------------------
-# IMPORTANT: Update 'userdirectory' to your actual directory path
-data_dir <- "/Users/suku/Downloads/R_Code_TPCC-TPCC/data_TPCC/data"
+# Defaults to ./data relative to this script's working directory; override if your data/ lives elsewhere
+data_dir <- "data"
 
 gdx_file_winsol <- file.path(data_dir, "winsolpotential2.gdx")
 gdx_file_bio <- file.path(data_dir, "biopotential.gdx")
@@ -932,8 +932,8 @@ for(region_name in regions_to_plot) {
   
   # Save the figure
   filename <- paste0('g_feasibility_combined_', gsub("\\+", "_", region_name), '.png')
-  ggsave(filename = filename, g_combined, 
-         width = 350, height = 450, units = 'mm', dpi = 500)
+  ggsave(filename = filename, g_combined,
+         width = 297, height = 307.3, units = 'mm', dpi = 500, bg = "white")
   
   cat("     Saved:", filename, "\n")
 }
