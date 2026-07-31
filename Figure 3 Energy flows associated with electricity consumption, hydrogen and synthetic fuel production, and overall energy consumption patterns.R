@@ -216,7 +216,7 @@ create_sankey <- function(data, year_val, scenario_val, show_title = FALSE) {
     geom_flow(aes(fill = Carrier), show.legend = FALSE) +
     geom_stratum(aes(fill = Carrier, alpha = Alpha), color = 'transparent', show.legend = FALSE) +
     geom_text(aes(label = Label, hjust = Positionh, vjust = Positionv), 
-              stat = 'stratum', size = 3) +
+              stat = 'stratum', size = 4) +
     labs(title = ifelse(show_title, paste0(scenario_val, " - ", year_val), NULL),
          x = NULL, 
          y = expression(paste('Energy (EJ ', yr^{-1}, ')'))) +
@@ -229,10 +229,10 @@ create_sankey <- function(data, year_val, scenario_val, show_title = FALSE) {
     theme_bw() +
     theme(legend.position = 'none',
           strip.background = element_blank(),
-          axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
-          axis.text.y = element_text(size = 8),
-          axis.title.y = element_text(size = 9),
-          plot.title = element_text(size = 9, face = "bold"))
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 11),
+          axis.text.y = element_text(size = 11),
+          axis.title.y = element_text(size = 12),
+          plot.title = element_text(size = 12, face = "bold"))
   
   return(p)
 }
@@ -385,10 +385,10 @@ p_e <- ggplot(plot_data_absolute, aes(x = Scenario, y = value, fill = EnergyType
   ) +
   theme_bw() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
-    axis.text.y = element_text(size = 8),
-    axis.title = element_text(size = 9),
-    strip.text = element_text(face = "bold", size = 9),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 11),
+    axis.text.y = element_text(size = 11),
+    axis.title = element_text(size = 12),
+    strip.text = element_text(face = "bold", size = 12),
     strip.background = element_blank(),
     legend.position = "none",
     panel.spacing = unit(0.5, "lines"),
@@ -408,14 +408,14 @@ p_f <- ggplot(plot_data_percentage, aes(x = Scenario, y = percentage, fill = Ene
   ) +
   theme_bw() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
-    axis.text.y = element_text(size = 8),
-    axis.title = element_text(size = 9),
-    strip.text = element_text(face = "bold", size = 9),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 11),
+    axis.text.y = element_text(size = 11),
+    axis.title = element_text(size = 12),
+    strip.text = element_text(face = "bold", size = 12),
     strip.background = element_blank(),
     legend.position = "bottom",
-    legend.title = element_text(size = 11, face = "bold"),
-    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 14, face = "bold"),
+    legend.text = element_text(size = 13),
     legend.key.size = unit(1, "cm"),
     legend.key.width = unit(1.5, "cm"),
     legend.direction = "horizontal",
@@ -441,6 +441,7 @@ p_top <- plot_grid(
   p_a, p_b,
   p_c, p_d,
   labels = c("a", "b", "c", "d"),
+  label_size = 16,
   ncol = 2,
   nrow = 2
 )
@@ -450,6 +451,7 @@ p_bottom <- plot_grid(
   p_e,
   p_f_no_legend,
   labels = c("e", "f"),
+  label_size = 16,
   ncol = 2,
   nrow = 1,
   rel_widths = c(1, 1)
@@ -479,8 +481,8 @@ basic_plot <- ggplot(data.frame(
   theme(
     legend.position = "bottom",
     legend.direction = "horizontal",
-    legend.title = element_text(size = 8, face = "bold"),
-    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 11, face = "bold"),
+    legend.text = element_text(size = 11),
     legend.key.size = unit(0.5, "cm"),
     legend.key.width = unit(0.5, "cm")
   ) +

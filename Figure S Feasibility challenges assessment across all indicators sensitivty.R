@@ -377,8 +377,8 @@ df_load_data <- df_load_data %>%
   mutate(Year = as.numeric(Year), value = as.numeric(value))
 
 # Define sensitivity scenarios
-cmain <- c("CurPol", "TPCC", "TPCC_a", "TPCC_DAChigh", "TPCC_hydhigh", "TPCC_noBECCS", "TPCC_noEW")
-cmain_plot <- c("TPCC", "TPCC_a", "TPCC_DAChigh", "TPCC_hydhigh", "TPCC_noBECCS", "TPCC_noEW")
+cmain <- c("CurPol", "TPCC", "TPCC_a", "TPCC_DAChigh", "TPCC_hydhigh", "TPCC_noBECCS", "TPCC_noEW", "TPCC_CarPrcDif")
+cmain_plot <- c("TPCC", "TPCC_a", "TPCC_DAChigh", "TPCC_hydhigh", "TPCC_noBECCS", "TPCC_noEW", "TPCC_CarPrcDif")
 
 cat("   - Loaded", length(unique(df_load_data$Scenario)), "scenarios\n")
 
@@ -463,7 +463,8 @@ scenario_labels <- tribble(
   "TPCC_DAChigh", "TPCC_DAChigh", set1_colors[3], "dotted", 15,
   "TPCC_hydhigh", "TPCC_hydhigh", set1_colors[4], "dotdash", 18,
   "TPCC_noBECCS", "TPCC_noBECCS", set1_colors[5], "longdash", 8,
-  "TPCC_noEW", "TPCC_noEW", set1_colors[6], "twodash", 3
+  "TPCC_noEW", "TPCC_noEW", set1_colors[6], "twodash", 3,
+  "TPCC_CarPrcDif", "TPCC_CarPrcDif", set1_colors[7], "42", 4
 )
 
 # Create manual scales
@@ -479,17 +480,17 @@ plot_theme_white <- theme_bw() +
     axis.line = element_line(colour = 'black', linewidth = 0.25),
     panel.background = element_rect(fill = NA),
     strip.background = element_rect(fill = NA, colour = NA),
-    strip.text = element_text(size = 6, colour = 'black', face = 'plain'),
-    axis.text.x = element_text(size = 6, angle = 45, vjust = 1, hjust = 1),
-    axis.text.y = element_text(size = 6),
-    axis.title = element_text(size = 6),
-    legend.text = element_text(size = 8),
+    strip.text = element_text(size = 9, colour = 'black', face = 'plain'),
+    axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),
+    axis.text.y = element_text(size = 9),
+    axis.title = element_text(size = 9),
+    legend.text = element_text(size = 11),
     legend.title = element_blank(),
-    legend.key.height = unit(8.5, 'pt'),
-    legend.key.width = unit(7, 'pt'),
+    legend.key.height = unit(10, 'pt'),
+    legend.key.width = unit(9, 'pt'),
     axis.ticks = element_line(colour = 'black', linewidth = 0.25),
-    plot.title = element_text(size = 8),
-    plot.tag = element_text(size = 7, face = 'bold'),
+    plot.title = element_text(size = 11),
+    plot.tag = element_text(size = 10, face = 'bold'),
     plot.margin = margin(1, 1, 1, 1)
   )
 
@@ -795,9 +796,10 @@ for(region_name in regions_to_plot) {
   # Filter data for current region
   df_load_data_region <- df_load_data %>% 
     filter(Region == region_name) %>%
-    mutate(Scenario = factor(Scenario, levels = c("CurPol", "TPCC", "TPCC_a", 
-                                                  "TPCC_DAChigh", "TPCC_hydhigh", 
-                                                  "TPCC_noBECCS", "TPCC_noEW")))
+    mutate(Scenario = factor(Scenario, levels = c("CurPol", "TPCC", "TPCC_a",
+                                                  "TPCC_DAChigh", "TPCC_hydhigh",
+                                                  "TPCC_noBECCS", "TPCC_noEW",
+                                                  "TPCC_CarPrcDif")))
   
   if(nrow(df_load_data_region) == 0) {
     cat("     Warning: No data found for", region_name, "\n")
@@ -869,9 +871,9 @@ for(region_name in regions_to_plot) {
   row1_y <- row2_y + row_height + row_spacing
   plot_width <- 0.23
   
-  legend_x <- 0.73
-  legend_width <- 0.13
-  
+  legend_x <- 0.76
+  legend_width <- 0.15
+
   # CREATE COMBINED FIGURE
   g_combined <- ggdraw() +
     # Row 1: GEOLOGICAL FEASIBILITY
@@ -879,14 +881,14 @@ for(region_name in regions_to_plot) {
     draw_plot(g_wind_pot + theme(legend.position = "none"), 0.26, row1_y, plot_width, row_height) +
     draw_plot(g_solar_pot + theme(legend.position = "none"), 0.51, row1_y, plot_width, row_height) +
     draw_plot(g_ccs_geol + theme(legend.position = "none"), 0.76, row1_y, plot_width, row_height) +
-    
+
     # Row 2: ECONOMIC FEASIBILITY
     draw_plot(g_gdp_loss + theme(legend.position = "none"), 0.01, row2_y, plot_width, row_height) +
     draw_plot(g_carbon_price + theme(legend.position = "none"), 0.26, row2_y, plot_width, row_height) +
     draw_plot(g_energy_inv + theme(legend.position = "none"), 0.51, row2_y, plot_width, row_height) +
     draw_plot(legend, x = legend_x, y = row2_y, width = legend_width, height = row_height) +
-    draw_label(region_name, x = 0.88, y = row2_y + row_height/1.3, 
-               size = 12, fontface = "bold", hjust = 0.5) +
+    draw_label(region_name, x = 0.95, y = row2_y + row_height/1.3,
+               size = 15, fontface = "bold", hjust = 0.5) +
     
     # Row 3: TECHNOLOGICAL FEASIBILITY (Part 1)
     draw_plot(g_wind + theme(legend.position = "none"), 0.01, row3_y, plot_width, row_height) +
@@ -916,22 +918,22 @@ for(region_name in regions_to_plot) {
     draw_plot_label(
       label = c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
                 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w'),
-      x = c(0, 0.25, 0.50, 0.75, 0, 0.25, 0.50, 0, 0.25, 0.50, 0.75,
-            0, 0.25, 0.50, 0.75, 0, 0.25, 0.50, 0.75, 0, 0.25, 0.50, 0.75),
+      x = c(0, 0.24, 0.49, 0.74, 0, 0.24, 0.49, 0, 0.24, 0.49, 0.74,
+            0, 0.24, 0.49, 0.74, 0, 0.24, 0.49, 0.74, 0, 0.24, 0.49, 0.74),
       y = c(rep(row1_y + row_height - 0.01, 4),
             rep(row2_y + row_height - 0.01, 3),
             rep(row3_y + row_height - 0.01, 4),
             rep(row4_y + row_height - 0.01, 4),
             rep(row5_y + row_height - 0.01, 4),
             rep(row6_y + row_height - 0.01, 4)),
-      size = 10
+      size = 13
     )
   
   # Display the plot
   plot(g_combined)
   
   # Save the figure
-  filename <- paste0('g_feasibility_combined_', gsub("\\+", "_", region_name), '.png')
+  filename <- paste0('g_feasibility_sensitivity_', gsub("\\+", "_", region_name), '.png')
   ggsave(filename = filename, g_combined,
          width = 297, height = 307.3, units = 'mm', dpi = 500, bg = "white")
   

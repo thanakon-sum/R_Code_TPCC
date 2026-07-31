@@ -389,8 +389,8 @@ theme_common <- theme_bw() +
     panel.border = element_blank(),
     axis.line = element_line(color = "black", linewidth = 0.3),
     axis.ticks = element_line(color = "black", linewidth = 0.3),
-    axis.text = element_text(size = 8),
-    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 11),
+    axis.title = element_text(size = 12),
     legend.position = "none"
   )
 
@@ -493,8 +493,8 @@ p_f <- ggplot() +
 p_e_with_legend <- p_e + 
   guides(shape = "none") +
   theme(legend.position = "right",
-        legend.title = element_text(size = 9),
-        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 11),
         legend.key.size = unit(3, "mm"),
         legend.spacing.y = unit(1, "mm"),
         legend.margin = margin(t = 0, r = 0, b = -60, l = 0, unit = "mm"))
@@ -511,8 +511,8 @@ p_f_with_legend <- p_f +
     )
   ) +
   theme(legend.position = "right",
-        legend.title = element_text(size = 9),
-        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 11),
         legend.key.size = unit(3, "mm"),
         legend.spacing.y = unit(1, "mm"),
         legend.margin = margin(t = 0, r = 0, b = 60, l = 0, unit = "mm"))
@@ -530,7 +530,7 @@ plot_grid_main <- plot_grid(
   p_e, p_f,
   ncol = 2,
   labels = c("a", "b", "c", "d", "e", "f"),
-  label_size = 10,
+  label_size = 13,
   label_fontface = "bold"
 )
 
